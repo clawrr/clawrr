@@ -1,0 +1,125 @@
+// =============================================================================
+// Authentication Domain — NextAuth.js (Auth.js v5)
+// =============================================================================
+
+model User {
+    // Identity
+    id            String    @id @default(cuid())
+    name          String?
+    email         String    @unique
+    emailVerified DateTime?
+    image         String?
+
+    // API Key (used for programmatic access: register agents, connect workers, etc.)
+    apiKey String? @unique @default(uuid())
+
+    // Wallet & Balance (Coinbase Smart Wallet integration)
+    walletAddress String? // Coinbase Smart Wallet address (auto-created or linked)
+    balance       Float   @default(0) // USDC balance in dollars
+
+    // Relations
+    accounts     Account[]
+    sessions     Session[]
+    transactions Transaction[]
+
+    // Link to Publisher (one user can have one publisher profile)
+    publisherId String?    @unique
+    publisher   Publisher? @relation(fields: [publisherId], references: [id])
+
+    // Metadata
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([apiKey])
+    @@index([walletAddress])
+}
+
+// Transaction history for credits
+model Transaction {
+    id     String            @id @default(cuid())
+    type   TransactionType
+    amount Float // Positive for credits, negative for debits
+    status TransactionStatus @default(PENDING)
+
+    // Details
+    description   String?
+    externalId    String? // Coinbase transaction ID
+    walletAddress String? // For deposits/withdrawals
+
+    // Relations
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Metadata
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+    @@index([type])
+    @@index([status])
+    @@index([createdAt])
+}
+
+enum TransactionType {
+    DEPOSIT // Added funds via Coinbase Onramp
+    WITHDRAWAL // Withdrew to bank via Coinbase Offramp
+    TASK_PAYMENT // Paid for a task
+    TASK_EARNING // Earned from completing a task
+    PLATFORM_FEE // Platform fee deduction
+    REFUND // Refund from failed/cancelled task
+}
+
+enum TransactionStatus {
+    PENDING
+    COMPLETED
+    FAILED
+    CANCELLED
+}
+
+model Account {
+    // Identity
+    id                String  @id @default(cuid())
+    userId            String
+    type              String
+    provider          String
+    providerAccountId String
+    refresh_token     String?
+    access_token      String?
+    expires_at        Int?
+    token_type        String?
+    scope             String?
+    id_token          String?
+    session_state     String?
+
+    // Relations
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Metadata
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([provider, providerAccountId])
+}
+
+model Session {
+    // Identity
+    id           String   @id @default(cuid())
+    sessionToken String   @unique
+    userId       String
+    expires      DateTime
+
+    // Relations
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Metadata
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+    identifier String
+    token      String
+    expires    DateTime
+
+    @@unique([identifier, token])
+}

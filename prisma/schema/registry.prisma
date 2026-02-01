@@ -1,0 +1,255 @@
+// =============================================================================
+// Registry Domain — Enums
+// =============================================================================
+
+enum PublisherType {
+    USER
+    ORGANIZATION
+}
+
+enum AgentAvailability {
+    ONLINE
+    BUSY
+    OFFLINE
+    EXCLUSIVE
+}
+
+enum ContractState {
+    DRAFT
+    PROPOSED
+    SIGNED
+    EXECUTING
+    COMPLETED
+    REJECTED
+    DISPUTED
+    RESOLVED
+}
+
+enum PaymentTrigger {
+    ON_DELIVERY
+    ON_ACCEPTANCE
+    ESCROW
+    MILESTONE
+}
+
+enum FeedbackTag {
+    // Positive
+    FAST
+    HIGH_QUALITY
+    RELIABLE
+    CREATIVE
+    RESPONSIVE
+    GOOD_VALUE
+    // Negative
+    SLOW
+    LOW_QUALITY
+    UNRELIABLE
+    UNRESPONSIVE
+    OVERPRICED
+}
+
+// =============================================================================
+// Registry Domain — Publisher
+// =============================================================================
+
+model Publisher {
+    // Identity
+    id     String @id @default(uuid())
+    handle String @unique
+
+    // Profile
+    type        PublisherType @default(USER)
+    name        String
+    description String?
+    website     String?
+    verified    Boolean       @default(false)
+
+    // Billing
+    walletAddress String?
+    billingEmail  String?
+
+    // Stats (denormalized for performance)
+    agentsCount         Int   @default(0)
+    totalTasksCompleted Int   @default(0)
+    aggregateRating     Float @default(0)
+    totalEarnings       Float @default(0)
+
+    // Relations
+    agents Agent[]
+    user   User?
+
+    // Metadata
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([handle])
+    @@index([type])
+    @@index([verified])
+}
+
+// =============================================================================
+// Registry Domain — Agent
+// =============================================================================
+
+model Agent {
+    // Identity
+    id   String @id @default(uuid())
+    name String
+
+    // Profile
+    description  String
+    availability AgentAvailability @default(OFFLINE)
+
+    // Connection status (WebSocket-based, agent connects OUT to ClawRR)
+    lastSeenAt  DateTime? // Last WebSocket heartbeat
+    connectedAt DateTime? // When current connection was established
+
+    // Metadata arrays stored as JSON
+    tags      Json @default("[]") // string[]
+    languages Json @default("[\"en\"]") // string[]
+
+    // Reputation (denormalized for performance)
+    reputationScore Float @default(0)
+    totalTasks      Int   @default(0)
+    successRate     Float @default(0)
+    avgLatencyMs    Int   @default(0)
+    topTags         Json  @default("[]") // string[]
+    reviewsCount    Int   @default(0)
+
+    // Relations — Parent
+    publisherId String
+    publisher   Publisher @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+
+    // Relations — Children
+    capabilities      AgentCapability[]
+    contractsAsSeeker Contract[]        @relation("ContractSeeker")
+    contractsAsWorker Contract[]        @relation("ContractWorker")
+    feedbackGiven     Feedback[]        @relation("FeedbackSeeker")
+    feedbackReceived  Feedback[]        @relation("FeedbackWorker")
+
+    // Metadata
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([publisherId])
+    @@index([availability])
+    @@index([reputationScore])
+    @@index([createdAt])
+}
+
+model AgentCapability {
+    // Identity
+    id String @id @default(uuid())
+
+    // Capability definition
+    name        String // e.g., "logo-design", "code-review"
+    description String
+
+    // Schemas (JSON Schema format)
+    inputSchema  Json?
+    outputSchema Json?
+
+    // Pricing (always per-task)
+    pricingAmount   Float
+    pricingCurrency String @default("USDC")
+
+    // SLA
+    slaMaxLatencyMs Int?
+    slaAvailability Float?
+
+    // Relations — Parent
+    agentId String
+    agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+    @@index([agentId])
+    @@index([name])
+}
+
+// =============================================================================
+// Registry Domain — Contract
+// =============================================================================
+
+model Contract {
+    // Identity
+    id      String @id @default(uuid())
+    version String @default("HIRE/1.0")
+
+    // State
+    state ContractState @default(DRAFT)
+
+    // Parties
+    seekerAgentId String
+    seekerAgent   Agent  @relation("ContractSeeker", fields: [seekerAgentId], references: [id])
+    seekerWallet  String
+
+    workerAgentId String
+    workerAgent   Agent  @relation("ContractWorker", fields: [workerAgentId], references: [id])
+    workerWallet  String
+
+    // Task
+    taskDescription  String
+    taskRequirements Json   @default("[]") // string[]
+    taskInputSchema  Json?
+    taskOutputSchema Json?
+
+    // Terms
+    priceAmount           Float
+    priceCurrency         String         @default("USDC")
+    priceNetwork          String         @default("base")
+    deadline              DateTime?
+    paymentTrigger        PaymentTrigger
+    platformFeePercentage Float          @default(1)
+
+    // Signatures
+    hash            String?
+    seekerSignature String?
+    workerSignature String?
+
+    // Relations — Children
+    feedback Feedback[]
+
+    // Metadata
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([state])
+    @@index([seekerAgentId])
+    @@index([workerAgentId])
+    @@index([createdAt])
+}
+
+// =============================================================================
+// Registry Domain — Feedback
+// =============================================================================
+
+model Feedback {
+    // Identity
+    id String @id @default(uuid())
+
+    // Rating
+    rating Int // 1-5
+
+    // Content
+    tags             Json    @default("[]") // FeedbackTag[]
+    comment          String?
+    automatedMetrics Json? // { latencyMs, retries, outputValid, uptimeDuring }
+    workerResponse   String?
+
+    // Relations — Parent
+    contractId String
+    contract   Contract @relation(fields: [contractId], references: [id])
+
+    seekerAgentId String
+    seekerAgent   Agent  @relation("FeedbackSeeker", fields: [seekerAgentId], references: [id])
+
+    workerAgentId String
+    workerAgent   Agent  @relation("FeedbackWorker", fields: [workerAgentId], references: [id])
+
+    // Metadata
+    createdAt DateTime @default(now())
+
+    @@unique([contractId]) // One feedback per contract
+    @@index([workerAgentId])
+    @@index([rating])
+    @@index([createdAt])
+}

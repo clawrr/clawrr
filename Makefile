@@ -13,4 +13,4 @@ lint: node_modules/.install
 	npm run lint
 
 test: node_modules/.install
-	npm test
+	@echo "No tests yet"

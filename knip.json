@@ -1,5 +1,19 @@
 {
-  "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreDependencies": ["@jterrazz/codestyle", "@jterrazz/test", "@jterrazz/typescript"],
-  "ignoreBinaries": ["oxlint", "oxfmt"]
+    "$schema": "https://unpkg.com/knip@6/schema.json",
+    "ignoreDependencies": [
+        "@hookform/resolvers",
+        "@jterrazz/test",
+        "@jterrazz/typescript",
+        "@vercel/analytics",
+        "@vercel/speed-insights",
+        "postcss",
+        "react-hook-form"
+    ],
+    "ignoreBinaries": ["oxlint", "oxfmt"],
+    "ignore": ["oxfmt.config.ts", "oxlint.config.ts"],
+    "rules": {
+        "exports": "off",
+        "types": "off",
+        "files": "off"
+    }
 }

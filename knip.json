@@ -2,7 +2,6 @@
     "$schema": "https://unpkg.com/knip@6/schema.json",
     "ignoreDependencies": [
         "@hookform/resolvers",
-        "@jterrazz/test",
         "@jterrazz/typescript",
         "@vercel/analytics",
         "@vercel/speed-insights",

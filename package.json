@@ -50,8 +50,7 @@
         "zod": "^4.3.6"
     },
     "devDependencies": {
-        "@jterrazz/test": "^5.0.0",
-        "@jterrazz/typescript": "^6.0.2",
+        "@jterrazz/typescript": "^6.0.4",
         "@tailwindcss/postcss": "^4",
         "@types/better-sqlite3": "^7.6.13",
         "@types/node": "^24",

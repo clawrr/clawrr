@@ -1,11 +1,9 @@
 {
     "extends": "@jterrazz/typescript/tsconfig/next",
     "compilerOptions": {
-        "moduleResolution": "bundler",
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "@generated/prisma/*": ["./.artifacts/prisma/client/*"]
         }
-    },
-    "include": ["next-env.d.ts", ".next/types/**/*.ts", "**/*.ts", "**/*.tsx"],
-    "exclude": ["node_modules"]
+    }
 }

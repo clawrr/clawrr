@@ -1,7 +1,7 @@
+import type { Prisma } from '@generated/prisma/client';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import type { Prisma } from '@/generated/prisma/client';
 import { auth } from '@/infrastructure/auth';
 import { prisma } from '@/infrastructure/persistence/prisma';
 

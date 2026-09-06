@@ -47,7 +47,6 @@ src/
 ├── presentation/           # UI components
 │   ├── ui/                 # shadcn/ui components
 │   └── hooks/              # React hooks
-├── generated/              # Prisma generated client
 └── config/                 # App configuration
 ```
 
@@ -84,7 +83,7 @@ Copy `.env.example` to `.env` and configure:
 
 ```bash
 # Database (SQLite for local dev)
-DATABASE_URL="file:./data/database/main.sqlite"
+DATABASE_URL="file:./.artifacts/prisma/main.sqlite"
 
 # Auth.js (required)
 AUTH_SECRET="your-secret-key"  # Generate with: openssl rand -base64 32

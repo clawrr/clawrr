@@ -2,7 +2,8 @@
     "extends": "@jterrazz/typescript/tsconfig/next",
     "compilerOptions": {
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "@generated/prisma/*": ["./.artifacts/prisma/client/*"]
         }
     }
 }
